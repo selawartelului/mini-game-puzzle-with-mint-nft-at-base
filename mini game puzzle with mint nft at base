@@ -1,0 +1,64 @@
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract PuzzleNFT is ERC721, Ownable {
+
+    uint256 public nextTokenId = 1;
+
+    mapping(address => bool) public solved;
+    mapping(address => bool) public minted;
+
+    string public baseTokenURI;
+
+    constructor(string memory _baseURI)
+        ERC721("Puzzle Master", "PZL")
+        Ownable(msg.sender)
+    {
+        baseTokenURI = _baseURI;
+    }
+
+    // Puzzle answer: BASE
+    function solvePuzzle(string calldata answer) external {
+        require(!solved[msg.sender], "Already solved");
+        require(
+            keccak256(abi.encodePacked(answer)) ==
+            keccak256(abi.encodePacked("BASE")),
+            "Wrong answer"
+        );
+
+        solved[msg.sender] = true;
+    }
+
+    // Mint NFT after solving puzzle
+    function mintNFT() external {
+        require(solved[msg.sender], "Solve puzzle first");
+        require(!minted[msg.sender], "Already minted");
+
+        minted[msg.sender] = true;
+
+        uint256 tokenId = nextTokenId++;
+
+        _safeMint(msg.sender, tokenId);
+    }
+
+    function _baseURI()
+        internal
+        view
+        override
+        returns (string memory)
+    {
+        return baseTokenURI;
+    }
+
+    // Owner can change NFT metadata URI
+    function setBaseURI(string calldata newURI)
+        external
+        onlyOwner
+    {
+        baseTokenURI = newURI;
+    }
+}
